@@ -377,6 +377,103 @@ const EditorModule = (() => {
       });
     });
 
+    // Helper: Reorder drop onto thumbnail
+    const _executeReorderDrop = async (targetRow, targetSlot) => {
+      if (!currentDragPhoto) return;
+      const source = currentDragPhoto;
+      const sourceRow = source.rowId;
+      const sourceSlot = parseInt(source.slot);
+      const tSlot = parseInt(targetSlot);
+
+      if (sourceRow === targetRow && sourceSlot === tSlot) {
+        currentDragPhoto = null;
+        return;
+      }
+
+      const gatherArr = (rId) => {
+        const arr = [];
+        for(let s=0; s<20; s++) {
+          if(currentPhotos[`${rId}_${s}`]) arr.push({ slot: s, base64: currentPhotos[`${rId}_${s}`] });
+        }
+        return arr;
+      };
+
+      const sArr = gatherArr(sourceRow);
+      const tArr = sourceRow === targetRow ? sArr : gatherArr(targetRow);
+
+      const sourceIdx = sArr.findIndex(x => x.slot === sourceSlot);
+      const targetIdx = tArr.findIndex(x => x.slot === tSlot);
+
+      if (sourceIdx !== -1 && targetIdx !== -1) {
+        const [moved] = sArr.splice(sourceIdx, 1);
+        tArr.splice(targetIdx, 0, moved);
+
+        const reassign = async (rId, arr) => {
+          const base64Arr = arr.map(a => a.base64);
+          for(let s=0; s<20; s++) {
+            const key = `${rId}_${s}`;
+            if (s < base64Arr.length) {
+              currentPhotos[key] = base64Arr[s];
+            } else {
+              delete currentPhotos[key];
+            }
+          }
+          await Storage.reassignRowPhotos(currentTemplate.templateId, rId, base64Arr);
+        };
+
+        await reassign(sourceRow, sArr);
+        if (sourceRow !== targetRow) await reassign(targetRow, tArr);
+
+        _updateFotoCellDOM(sourceRow);
+        if (sourceRow !== targetRow) _updateFotoCellDOM(targetRow);
+      }
+      currentDragPhoto = null;
+    };
+
+    // Helper: Drop onto empty zone
+    const _executeEmptyZoneDrop = async (targetRow) => {
+      if (!currentDragPhoto) return;
+      const source = currentDragPhoto;
+      const sourceRow = source.rowId;
+
+      const gatherArr = (rId) => {
+        const arr = [];
+        for(let s=0; s<20; s++) {
+          if(currentPhotos[`${rId}_${s}`]) arr.push({ slot: s, base64: currentPhotos[`${rId}_${s}`] });
+        }
+        return arr;
+      };
+
+      const sArr = gatherArr(sourceRow);
+      const tArr = sourceRow === targetRow ? sArr : gatherArr(targetRow);
+
+      const sourceIdx = sArr.findIndex(x => x.slot === parseInt(source.slot));
+      if (sourceIdx !== -1) {
+        const [moved] = sArr.splice(sourceIdx, 1);
+        tArr.push(moved);
+
+        const reassign = async (rId, arr) => {
+          const base64Arr = arr.map(a => a.base64);
+          for(let s=0; s<20; s++) {
+            const key = `${rId}_${s}`;
+            if (s < base64Arr.length) {
+              currentPhotos[key] = base64Arr[s];
+            } else {
+              delete currentPhotos[key];
+            }
+          }
+          await Storage.reassignRowPhotos(currentTemplate.templateId, rId, base64Arr);
+        };
+
+        await reassign(sourceRow, sArr);
+        if (sourceRow !== targetRow) await reassign(targetRow, tArr);
+
+        _updateFotoCellDOM(sourceRow);
+        if (sourceRow !== targetRow) _updateFotoCellDOM(targetRow);
+      }
+      currentDragPhoto = null;
+    };
+
     // Clear drag visual states helper
     const _clearDragStyles = () => {
       container.querySelectorAll('.thumbnail-item, .drop-zone, .drop-zone-mini').forEach(el => {
