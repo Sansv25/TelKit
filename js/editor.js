@@ -525,13 +525,25 @@ const EditorModule = (() => {
       // --- Touch Drag Events (Mobile & Tablet) ---
       let touchActive = false;
       let lastTouchTarget = null;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let isMoved = false;
 
       item.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.thumbnail-delete')) return;
         if (e.touches.length !== 1) return;
+
+        if (e.cancelable) e.preventDefault(); // Stop mobile browser native scroll hijack!
+
         touchActive = true;
+        isMoved = false;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+
         currentDragPhoto = { rowId: item.dataset.row, slot: item.dataset.slot };
-        item.style.opacity = '0.5';
-        item.style.transform = 'scale(1.1)';
+        item.style.opacity = '0.6';
+        item.style.transform = 'scale(1.15)';
         item.style.zIndex = '100';
       }, { passive: false });
 
@@ -540,6 +552,10 @@ const EditorModule = (() => {
         if (e.cancelable) e.preventDefault(); // Stop mobile browser page scrolling/sliding!
 
         const touch = e.touches[0];
+        const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+        if (dist > 5) {
+          isMoved = true;
+        }
 
         // Temporarily disable pointer-events on current dragged item so elementFromPoint looks underneath!
         item.style.pointerEvents = 'none';
@@ -580,7 +596,7 @@ const EditorModule = (() => {
         const touch = e.changedTouches && e.changedTouches[0];
         let targetDropElem = lastTouchTarget;
 
-        if (touch) {
+        if (touch && isMoved) {
           item.style.pointerEvents = 'none';
           const elem = document.elementFromPoint(touch.clientX, touch.clientY);
           item.style.pointerEvents = '';
@@ -593,7 +609,7 @@ const EditorModule = (() => {
 
         _clearDragStyles();
 
-        if (targetDropElem && targetDropElem !== item) {
+        if (isMoved && targetDropElem && targetDropElem !== item) {
           const targetThumb = targetDropElem.closest('.thumbnail-item');
           const targetZone = targetDropElem.closest('.drop-zone, .drop-zone-mini');
 
@@ -602,10 +618,15 @@ const EditorModule = (() => {
           } else if (targetZone) {
             await _executeEmptyZoneDrop(targetZone.dataset.rowId);
           }
+        } else if (!isMoved) {
+          // Quick tap -> Open Lightbox preview!
+          const img = item.querySelector('img');
+          if (img) openLightbox(img.src);
         }
 
         lastTouchTarget = null;
         currentDragPhoto = null;
+        isMoved = false;
       };
 
       item.addEventListener('touchend', handleTouchEnd);
