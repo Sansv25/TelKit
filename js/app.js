@@ -118,18 +118,27 @@ const Router = (() => {
 function toggleMobileSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('open');
+  const menuBtn = document.getElementById('mobileMenuBtn');
+
+  const isOpen = sidebar.classList.toggle('open');
+  overlay.classList.toggle('open', isOpen);
+
+  if (menuBtn) {
+    menuBtn.style.display = isOpen ? 'none' : '';
+  }
 }
 
 function closeMobileSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
+  const menuBtn = document.getElementById('mobileMenuBtn');
+
   sidebar.classList.remove('open');
   overlay.classList.remove('open');
+  if (menuBtn) {
+    menuBtn.style.display = '';
+  }
 }
-
-
 
 // ===== App Initialization =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -149,6 +158,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Mobile menu
   document.getElementById('mobileMenuBtn').addEventListener('click', toggleMobileSidebar);
   document.getElementById('sidebarOverlay').addEventListener('click', closeMobileSidebar);
+  const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+  }
 
   // Theme toggle logic
   const themeToggleBtn = document.getElementById('themeToggleBtn');

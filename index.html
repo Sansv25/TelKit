@@ -37,8 +37,13 @@
     <!-- ===== Sidebar ===== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="brand-logo-box">
-          <img src="icons/logo-teks.png" alt="Telkom Property">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px;">
+          <div class="brand-logo-box" style="flex:1;">
+            <img src="icons/logo-teks.png" alt="Telkom Property">
+          </div>
+          <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
         <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600; color:var(--text-secondary); letter-spacing:0.5px;">
           <img src="icons/Logo.png" alt="Logo Icon" style="width:16px; height:16px; object-fit:contain;">

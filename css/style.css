@@ -1322,6 +1322,25 @@ h4 { font-size: 1rem; }
   gap: var(--space-md);
 }
 
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-close-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
   .main-content {
@@ -1349,8 +1368,12 @@ h4 { font-size: 1rem; }
     z-index: 300;
   }
 
+  .sidebar-close-btn {
+    display: flex;
+  }
+
   .sidebar-brand {
-    padding-top: 56px !important; /* Prevents fixed mobile menu button from overlapping logo */
+    padding-top: 18px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
