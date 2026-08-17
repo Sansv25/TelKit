@@ -1315,6 +1315,13 @@ h4 { font-size: 1rem; }
   width: 60%;
 }
 
+/* ---------- Grid 2-Col Utility ---------- */
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
   .main-content {
@@ -1337,6 +1344,15 @@ h4 { font-size: 1rem; }
 
   .mobile-menu-btn {
     display: flex;
+    top: 12px;
+    left: 12px;
+    z-index: 300;
+  }
+
+  .sidebar-brand {
+    padding-top: 56px !important; /* Prevents fixed mobile menu button from overlapping logo */
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 
   .main-content {
@@ -1349,6 +1365,10 @@ h4 { font-size: 1rem; }
     grid-template-columns: 1fr;
   }
 
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+
   .page-header-row {
     flex-direction: column;
     align-items: flex-start;
@@ -1356,12 +1376,37 @@ h4 { font-size: 1rem; }
 
   .editor-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .editor-header-left {
+    width: 100%;
+  }
+
+  .editor-header-right {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .editor-header-right .btn {
+    flex: 1 1 calc(50% - 6px);
+    font-size: 0.8125rem;
+    padding: 8px 10px;
+    justify-content: center;
+  }
+
+  .sheet-title-input {
+    min-width: 0 !important;
+    width: 100%;
+    font-size: 1.2rem;
   }
 
   .modal {
-    max-width: 100%;
-    margin: var(--space-md);
+    max-width: calc(100% - 24px);
+    margin: 12px;
     border-radius: var(--radius-lg);
   }
 
@@ -1378,6 +1423,12 @@ h4 { font-size: 1rem; }
   .thumbnail-item {
     width: 56px;
     height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .editor-header-right .btn {
+    flex: 1 1 100%; /* Full width stacked buttons on small phones */
   }
 }
 
