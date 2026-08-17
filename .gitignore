@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Documents
+PRD-Evidence-Foto-Housekeeping.md
+
+# Test & Scratch files
+create-test-excel.js
+Test_Checklist_Housekeeping.xlsx
+*.xlsx
+
+# OS / Environment files
+.DS_Store
+Thumbs.db
+*.log
