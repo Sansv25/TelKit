@@ -230,7 +230,6 @@ h4 { font-size: 1rem; }
   display: flex;
   min-height: 100vh;
   position: relative;
-  z-index: 1;
 }
 
 /* Sidebar */
@@ -1351,10 +1350,15 @@ h4 { font-size: 1rem; }
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    z-index: 500;
   }
 
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    z-index: 400;
   }
 
   .sidebar-overlay.open {
