@@ -251,36 +251,36 @@ h4 { font-size: 1rem; }
 }
 
 .sidebar-brand {
-  padding: var(--space-lg) var(--space-lg);
+  padding: 18px 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.brand-logo-box {
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-sm);
+  justify-content: flex-start;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  max-width: 100%;
 }
 
-.sidebar-brand .brand-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--accent), hsl(200, 70%, 50%));
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.125rem;
-  flex-shrink: 0;
+.brand-logo-box img {
+  max-width: 100%;
+  height: auto;
+  max-height: 36px;
+  object-fit: contain;
 }
 
-.sidebar-brand .brand-text {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.sidebar-brand .brand-sub {
-  font-size: 0.6875rem;
-  color: var(--text-secondary);
-  font-weight: 400;
+[data-theme="light"] .brand-logo-box {
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .sidebar-nav {
