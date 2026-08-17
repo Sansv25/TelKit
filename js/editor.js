@@ -377,6 +377,17 @@ const EditorModule = (() => {
       });
     });
 
+    // Clear drag visual states helper
+    const _clearDragStyles = () => {
+      container.querySelectorAll('.thumbnail-item, .drop-zone, .drop-zone-mini').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = '';
+        el.style.border = '';
+        el.style.zIndex = '';
+        el.classList.remove('dragover');
+      });
+    };
+
     // Thumbnail drag & drop (reorder photos - Mouse & Touch)
     container.querySelectorAll('.thumbnail-item').forEach(item => {
       // --- Mouse Drag Events ---
@@ -386,7 +397,7 @@ const EditorModule = (() => {
         item.style.opacity = '0.5';
       });
       item.addEventListener('dragend', () => {
-        item.style.opacity = '1';
+        _clearDragStyles();
         currentDragPhoto = null;
       });
       item.addEventListener('dragover', (e) => {
@@ -402,9 +413,7 @@ const EditorModule = (() => {
       });
       item.addEventListener('drop', async (e) => {
         e.preventDefault();
-        item.style.transform = '';
-        item.style.border = '';
-        item.style.zIndex = '';
+        _clearDragStyles();
         
         try {
           if (currentDragPhoto) {
@@ -465,18 +474,9 @@ const EditorModule = (() => {
       const handleTouchEnd = async (e) => {
         if (!touchActive) return;
         touchActive = false;
-
-        item.style.opacity = '1';
-        item.style.transform = '';
-        item.style.zIndex = '';
+        _clearDragStyles();
 
         if (lastTouchTarget) {
-          lastTouchTarget.style.border = '';
-          lastTouchTarget.style.transform = '';
-          if (lastTouchTarget.classList.contains('drop-zone')) {
-            lastTouchTarget.classList.remove('dragover');
-          }
-
           const targetThumb = lastTouchTarget.closest('.thumbnail-item');
           const targetZone = lastTouchTarget.closest('.drop-zone');
 
