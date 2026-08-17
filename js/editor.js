@@ -355,50 +355,7 @@ const EditorModule = (() => {
         
         try {
           if (currentDragPhoto) {
-            const source = currentDragPhoto;
-            const sourceRow = source.rowId;
-            const targetRow = rowId;
-            
-            // Gather all photos as an array for source & target
-            const gatherArr = (rId) => {
-              const arr = [];
-              for(let s=0; s<20; s++) {
-                if(currentPhotos[`${rId}_${s}`]) arr.push({ slot: s, base64: currentPhotos[`${rId}_${s}`] });
-              }
-              return arr;
-            };
-            
-            const sArr = gatherArr(sourceRow);
-            const tArr = sourceRow === targetRow ? sArr : gatherArr(targetRow);
-            
-            const sourceIdx = sArr.findIndex(x => x.slot === parseInt(source.slot));
-            if (sourceIdx !== -1) {
-              // Remove from source and append to target end
-              const [moved] = sArr.splice(sourceIdx, 1);
-              tArr.push(moved);
-              
-              // Reassign and save
-              const reassign = async (rId, arr) => {
-                const base64Arr = arr.map(a => a.base64);
-                for(let s=0; s<20; s++) {
-                  const key = `${rId}_${s}`;
-                  if (s < base64Arr.length) {
-                    currentPhotos[key] = base64Arr[s];
-                  } else {
-                    delete currentPhotos[key];
-                  }
-                }
-                await Storage.reassignRowPhotos(templateId, rId, base64Arr);
-              };
-              
-              await reassign(sourceRow, sArr);
-              if (sourceRow !== targetRow) await reassign(targetRow, tArr);
-              
-              _updateFotoCellDOM(sourceRow);
-              if (sourceRow !== targetRow) _updateFotoCellDOM(targetRow);
-            }
-            
-            currentDragPhoto = null; // Clear drag state
+            await _executeEmptyZoneDrop(rowId);
             return; // Important: prevent file upload fallback
           }
         } catch (err) { console.error(err); }
@@ -420,8 +377,9 @@ const EditorModule = (() => {
       });
     });
 
-    // Thumbnail drag & drop (reorder photos)
+    // Thumbnail drag & drop (reorder photos - Mouse & Touch)
     container.querySelectorAll('.thumbnail-item').forEach(item => {
+      // --- Mouse Drag Events ---
       item.addEventListener('dragstart', (e) => {
         currentDragPhoto = { rowId: item.dataset.row, slot: item.dataset.slot };
         e.dataTransfer.setData('text/plain', 'internal_drag'); // required for firefox
@@ -450,62 +408,90 @@ const EditorModule = (() => {
         
         try {
           if (currentDragPhoto) {
-            const source = currentDragPhoto;
-            const sourceRow = source.rowId;
-            const targetRow = item.dataset.row;
-            const sourceSlot = parseInt(source.slot);
-            const targetSlot = parseInt(item.dataset.slot);
-
-            if (sourceRow === targetRow && sourceSlot === targetSlot) {
-              currentDragPhoto = null;
-              return;
-            }
-
-            const gatherArr = (rId) => {
-              const arr = [];
-              for(let s=0; s<20; s++) {
-                if(currentPhotos[`${rId}_${s}`]) arr.push({ slot: s, base64: currentPhotos[`${rId}_${s}`] });
-              }
-              return arr;
-            };
-            
-            const sArr = gatherArr(sourceRow);
-            const tArr = sourceRow === targetRow ? sArr : gatherArr(targetRow);
-            
-            const sourceIdx = sArr.findIndex(x => x.slot === sourceSlot);
-            const targetIdx = tArr.findIndex(x => x.slot === targetSlot);
-            
-            if (sourceIdx !== -1 && targetIdx !== -1) {
-              // Remove from source, insert at target index
-              const [moved] = sArr.splice(sourceIdx, 1);
-              tArr.splice(targetIdx, 0, moved);
-
-              const reassign = async (rId, arr) => {
-                const base64Arr = arr.map(a => a.base64);
-                for(let s=0; s<20; s++) {
-                  const key = `${rId}_${s}`;
-                  if (s < base64Arr.length) {
-                    currentPhotos[key] = base64Arr[s];
-                  } else {
-                    delete currentPhotos[key];
-                  }
-                }
-                await Storage.reassignRowPhotos(currentTemplate.templateId, rId, base64Arr);
-              };
-
-              await reassign(sourceRow, sArr);
-              if (sourceRow !== targetRow) await reassign(targetRow, tArr);
-
-              _updateFotoCellDOM(sourceRow);
-              if (sourceRow !== targetRow) _updateFotoCellDOM(targetRow);
-            }
-            currentDragPhoto = null;
+            await _executeReorderDrop(item.dataset.row, item.dataset.slot);
             return;
           }
         } catch (err) { console.error(err); }
         
         currentDragPhoto = null;
       });
+
+      // --- Touch Drag Events (Mobile & Tablet) ---
+      let touchActive = false;
+      let lastTouchTarget = null;
+
+      item.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        touchActive = true;
+        currentDragPhoto = { rowId: item.dataset.row, slot: item.dataset.slot };
+        item.style.opacity = '0.5';
+        item.style.transform = 'scale(1.1)';
+        item.style.zIndex = '100';
+      }, { passive: true });
+
+      item.addEventListener('touchmove', (e) => {
+        if (!touchActive || !currentDragPhoto) return;
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!elem) return;
+
+        const targetThumb = elem.closest('.thumbnail-item');
+        const targetZone = elem.closest('.drop-zone');
+        const dropElem = targetThumb || targetZone;
+
+        if (lastTouchTarget && lastTouchTarget !== dropElem) {
+          lastTouchTarget.style.border = '';
+          lastTouchTarget.style.transform = '';
+          if (lastTouchTarget.classList.contains('drop-zone')) {
+            lastTouchTarget.classList.remove('dragover');
+          }
+        }
+
+        if (dropElem) {
+          if (e.cancelable) e.preventDefault(); // Prevent page scrolling while dragging photo
+          lastTouchTarget = dropElem;
+          if (dropElem.classList.contains('drop-zone')) {
+            dropElem.classList.add('dragover');
+          } else {
+            dropElem.style.border = '2px solid var(--accent)';
+            dropElem.style.transform = 'scale(1.05)';
+          }
+        } else {
+          lastTouchTarget = null;
+        }
+      }, { passive: false });
+
+      const handleTouchEnd = async (e) => {
+        if (!touchActive) return;
+        touchActive = false;
+
+        item.style.opacity = '1';
+        item.style.transform = '';
+        item.style.zIndex = '';
+
+        if (lastTouchTarget) {
+          lastTouchTarget.style.border = '';
+          lastTouchTarget.style.transform = '';
+          if (lastTouchTarget.classList.contains('drop-zone')) {
+            lastTouchTarget.classList.remove('dragover');
+          }
+
+          const targetThumb = lastTouchTarget.closest('.thumbnail-item');
+          const targetZone = lastTouchTarget.closest('.drop-zone');
+
+          if (targetThumb) {
+            await _executeReorderDrop(targetThumb.dataset.row, targetThumb.dataset.slot);
+          } else if (targetZone) {
+            await _executeEmptyZoneDrop(targetZone.dataset.rowId);
+          }
+        }
+
+        lastTouchTarget = null;
+        currentDragPhoto = null;
+      };
+
+      item.addEventListener('touchend', handleTouchEnd);
+      item.addEventListener('touchcancel', handleTouchEnd);
     });
 
     // Thumbnail clicks (lightbox)
