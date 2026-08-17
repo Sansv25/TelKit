@@ -427,10 +427,12 @@ const EditorModule = (() => {
         item.style.opacity = '0.5';
         item.style.transform = 'scale(1.1)';
         item.style.zIndex = '100';
-      }, { passive: true });
+      }, { passive: false });
 
       item.addEventListener('touchmove', (e) => {
         if (!touchActive || !currentDragPhoto) return;
+        if (e.cancelable) e.preventDefault(); // Stop mobile browser page scrolling/sliding!
+
         const touch = e.touches[0];
         const elem = document.elementFromPoint(touch.clientX, touch.clientY);
         if (!elem) return;
@@ -448,7 +450,6 @@ const EditorModule = (() => {
         }
 
         if (dropElem) {
-          if (e.cancelable) e.preventDefault(); // Prevent page scrolling while dragging photo
           lastTouchTarget = dropElem;
           if (dropElem.classList.contains('drop-zone')) {
             dropElem.classList.add('dragover');

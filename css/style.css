@@ -665,6 +665,10 @@ h4 { font-size: 1rem; }
   cursor: pointer;
   transition: all var(--transition-fast);
   border: 1px solid var(--border);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .thumbnail-item:hover {
