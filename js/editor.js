@@ -540,24 +540,29 @@ const EditorModule = (() => {
         if (e.cancelable) e.preventDefault(); // Stop mobile browser page scrolling/sliding!
 
         const touch = e.touches[0];
+
+        // Temporarily disable pointer-events on current dragged item so elementFromPoint looks underneath!
+        item.style.pointerEvents = 'none';
         const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        item.style.pointerEvents = '';
+
         if (!elem) return;
 
         const targetThumb = elem.closest('.thumbnail-item');
-        const targetZone = elem.closest('.drop-zone');
+        const targetZone = elem.closest('.drop-zone, .drop-zone-mini');
         const dropElem = targetThumb || targetZone;
 
         if (lastTouchTarget && lastTouchTarget !== dropElem) {
           lastTouchTarget.style.border = '';
           lastTouchTarget.style.transform = '';
-          if (lastTouchTarget.classList.contains('drop-zone')) {
+          if (lastTouchTarget.classList.contains('drop-zone') || lastTouchTarget.classList.contains('drop-zone-mini')) {
             lastTouchTarget.classList.remove('dragover');
           }
         }
 
-        if (dropElem) {
+        if (dropElem && dropElem !== item) {
           lastTouchTarget = dropElem;
-          if (dropElem.classList.contains('drop-zone')) {
+          if (dropElem.classList.contains('drop-zone') || dropElem.classList.contains('drop-zone-mini')) {
             dropElem.classList.add('dragover');
           } else {
             dropElem.style.border = '2px solid var(--accent)';
@@ -571,11 +576,26 @@ const EditorModule = (() => {
       const handleTouchEnd = async (e) => {
         if (!touchActive) return;
         touchActive = false;
+
+        const touch = e.changedTouches && e.changedTouches[0];
+        let targetDropElem = lastTouchTarget;
+
+        if (touch) {
+          item.style.pointerEvents = 'none';
+          const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+          item.style.pointerEvents = '';
+          if (elem) {
+            const targetThumb = elem.closest('.thumbnail-item');
+            const targetZone = elem.closest('.drop-zone, .drop-zone-mini');
+            targetDropElem = targetThumb || targetZone;
+          }
+        }
+
         _clearDragStyles();
 
-        if (lastTouchTarget) {
-          const targetThumb = lastTouchTarget.closest('.thumbnail-item');
-          const targetZone = lastTouchTarget.closest('.drop-zone');
+        if (targetDropElem && targetDropElem !== item) {
+          const targetThumb = targetDropElem.closest('.thumbnail-item');
+          const targetZone = targetDropElem.closest('.drop-zone, .drop-zone-mini');
 
           if (targetThumb) {
             await _executeReorderDrop(targetThumb.dataset.row, targetThumb.dataset.slot);
