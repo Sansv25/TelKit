@@ -624,10 +624,10 @@ h4 { font-size: 1rem; }
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-fast);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   position: relative;
-  min-height: 60px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -637,8 +637,75 @@ h4 { font-size: 1rem; }
 .drop-zone-mini:hover,
 .drop-zone-mini.dragover {
   border-color: var(--accent);
-  background: var(--accent-subtle);
+  background: hsla(217, 91%, 60%, 0.1);
   color: var(--accent);
+}
+
+.upload-zone-empty {
+  border: 1.5px dashed hsla(217, 91%, 60%, 0.35);
+  background: hsla(217, 91%, 60%, 0.04);
+  padding: 10px 14px;
+  min-height: 80px;
+}
+
+.upload-zone-empty:hover,
+.upload-zone-empty.dragover {
+  border-color: var(--accent-hover);
+  background: hsla(217, 91%, 60%, 0.12);
+}
+
+.upload-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.upload-action-btn {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.825rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: all var(--transition-fast);
+}
+
+.upload-zone-empty:hover .upload-action-btn {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.upload-hint-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.upload-zone-filled {
+  border: 1px dashed var(--border);
+  background: var(--bg-input);
+  padding: 6px 10px;
+  min-height: 36px;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+}
+
+.upload-zone-filled:hover {
+  border-color: var(--accent);
+  background: hsla(217, 91%, 60%, 0.08);
+  color: var(--accent);
+}
+
+.upload-btn-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .drop-zone-mini input[type="file"] {
@@ -658,18 +725,19 @@ h4 { font-size: 1rem; }
 
 .thumbnail-item {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .thumbnail-item:hover {
   border-color: var(--accent);
-  transform: scale(1.08);
+  transform: scale(1.06);
   box-shadow: var(--shadow-md);
   z-index: 2;
 }
@@ -682,39 +750,44 @@ h4 { font-size: 1rem; }
 
 .thumbnail-badge {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  background: hsla(0, 0%, 0%, 0.65);
-  color: white;
-  font-size: 0.625rem;
-  font-weight: 600;
-  padding: 1px 5px;
+  top: 3px;
+  left: 3px;
+  background: hsla(0, 0%, 0%, 0.75);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
   border-radius: 4px;
-  line-height: 1.4;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 .thumbnail-delete {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
-  background: hsla(0, 72%, 50%, 0.85);
+  top: 3px;
+  right: 3px;
+  width: 24px;
+  height: 24px;
+  background: hsla(0, 72%, 50%, 0.9);
   color: white;
   border: none;
   border-radius: 50%;
-  font-size: 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
+  opacity: 0.85;
+  transition: all var(--transition-fast);
   line-height: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 .thumbnail-item:hover .thumbnail-delete {
   opacity: 1;
+  transform: scale(1.1);
 }
 
 /* ---------- Tables ---------- */
@@ -1448,8 +1521,8 @@ h4 { font-size: 1rem; }
   }
 
   .thumbnail-item {
-    width: 56px;
-    height: 56px;
+    width: 76px;
+    height: 76px;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -1559,4 +1632,44 @@ h4 { font-size: 1rem; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* =========================================
+   PDF Preview Modal Styles
+   ========================================= */
+.pdf-page-card {
+  background: #ffffff;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  position: relative;
+  width: 90%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--border);
+  margin: 0 auto;
+}
+
+.pdf-page-card img {
+  max-width: 100%;
+  max-height: 460px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
+.pdf-page-number {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
 }

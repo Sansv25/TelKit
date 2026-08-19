@@ -114,6 +114,50 @@ const ImportModule = (() => {
 
     if (aoa.length < 2) return null;
 
+    // Unroll merged cells from sheet['!merges'] into aoa matrix bounded by maxRow and maxCol
+    if (sheet['!merges'] && Array.isArray(sheet['!merges'])) {
+      const maxRow = aoa.length;
+      let maxCol = 0;
+      for (let r = 0; r < maxRow; r++) {
+        if (aoa[r] && aoa[r].length > maxCol) {
+          maxCol = aoa[r].length;
+        }
+      }
+
+      sheet['!merges'].forEach(range => {
+        const startRow = Math.min(Math.max(0, range.s.r), maxRow - 1);
+        const startCol = Math.min(Math.max(0, range.s.c), maxCol - 1);
+        const endRow = Math.min(Math.max(0, range.e.r), maxRow - 1);
+        const endCol = Math.min(Math.max(0, range.e.c), maxCol - 1);
+
+        if (startRow > endRow || startCol > endCol) return;
+
+        let val = '';
+        for (let r = startRow; r <= endRow; r++) {
+          if (aoa[r]) {
+            for (let c = startCol; c <= endCol; c++) {
+              if (aoa[r][c] !== undefined && aoa[r][c] !== null && String(aoa[r][c]).trim() !== '') {
+                val = aoa[r][c];
+                break;
+              }
+            }
+          }
+          if (val !== '') break;
+        }
+
+        if (val !== '') {
+          for (let r = startRow; r <= endRow; r++) {
+            if (!aoa[r]) aoa[r] = [];
+            for (let c = startCol; c <= endCol; c++) {
+              if (aoa[r][c] === undefined || aoa[r][c] === null || String(aoa[r][c]).trim() === '') {
+                aoa[r][c] = val;
+              }
+            }
+          }
+        }
+      });
+    }
+
     // Find header row: look for row containing PEKERJAAN, AKTIVITAS, OBYEK PEKERJAAN
     let headerRowIdx = -1;
     let colMap = {};
@@ -125,48 +169,75 @@ const ImportModule = (() => {
       const aktivitasIdx = row.findIndex(c => c.includes('AKTIVITAS'));
       const obyekIdx = row.findIndex(c => c.includes('OBYEK'));
 
-      if (pekerjaanIdx !== -1 && aktivitasIdx !== -1) {
+      if (pekerjaanIdx !== -1 && (aktivitasIdx !== -1 || obyekIdx !== -1)) {
         headerRowIdx = r;
         colMap.pekerjaan = pekerjaanIdx;
-        colMap.aktivitas = aktivitasIdx;
+        colMap.aktivitas = aktivitasIdx !== -1 ? aktivitasIdx : pekerjaanIdx + 1;
         colMap.obyek = obyekIdx !== -1 ? obyekIdx : -1;
 
-        // Find KELAS columns
-        colMap.kelasColumns = [];
-        colMap.kelasLabels = [];
-        for (let c = 0; c < row.length; c++) {
-          if (row[c].includes('KELAS')) {
-            colMap.kelasColumns.push(c);
-            colMap.kelasLabels.push(aoa[r][c].toString().trim());
-          }
-        }
-
-        // Find evidence foto columns (numbered 1, 2, 3... after EVIDENT header)
-        // The evidence header might be on this row or the next
+        // Find evidence foto columns
         let evidentStartCol = -1;
         for (let c = 0; c < row.length; c++) {
-          if (row[c].includes('EVIDENT') || row[c].includes('FOTO')) {
+          const cVal = row[c];
+          if (cVal.includes('EVIDENT') || cVal.includes('FOTO')) {
             evidentStartCol = c;
             break;
           }
         }
 
-        // Check next row for numbered sub-columns
-        colMap.fotoSlots = 0;
-        if (evidentStartCol !== -1 && r + 1 < aoa.length) {
-          const subRow = aoa[r + 1];
-          for (let c = evidentStartCol; c < subRow.length; c++) {
-            const val = String(subRow[c]).trim();
-            if (val && !isNaN(parseInt(val))) {
-              colMap.fotoSlots++;
+        // Fallback: Check for column where number headers (1, 2, 3...) start
+        if (evidentStartCol === -1) {
+          const obyekOrAktCol = obyekIdx !== -1 ? obyekIdx : (aktivitasIdx !== -1 ? aktivitasIdx : pekerjaanIdx);
+          for (let c = obyekOrAktCol + 1; c < row.length; c++) {
+            const valThisRow = String(aoa[r][c] || '').trim();
+            const valNextRow = r + 1 < aoa.length ? String(aoa[r + 1][c] || '').trim() : '';
+            if (valThisRow === '1' || valNextRow === '1') {
+              evidentStartCol = c;
+              break;
             }
           }
         }
-        // Also count columns on same row after evident
-        if (colMap.fotoSlots === 0 && evidentStartCol !== -1) {
-          // Count remaining columns after evident as potential foto slots
-          const afterEvident = row.length - evidentStartCol - 1;
-          if (afterEvident > 0) colMap.fotoSlots = afterEvident;
+
+        // Find KELAS columns bounded strictly between obyek column and evidentStartCol
+        colMap.kelasColumns = [];
+        colMap.kelasLabels = [];
+        const startColScan = obyekIdx !== -1 ? obyekIdx + 1 : (aktivitasIdx !== -1 ? aktivitasIdx + 1 : pekerjaanIdx + 1);
+        const endColScan = evidentStartCol !== -1 ? evidentStartCol : row.length;
+
+        for (let c = startColScan; c < endColScan; c++) {
+          const rawCell = aoa[r][c] != null ? String(aoa[r][c]).trim() : '';
+          const upperCell = rawCell.toUpperCase();
+
+          if (c === pekerjaanIdx || c === aktivitasIdx || c === obyekIdx) continue;
+
+          if (upperCell.includes('KELAS') || (rawCell && !/^\d+$/.test(rawCell))) {
+            colMap.kelasColumns.push(c);
+            colMap.kelasLabels.push(rawCell || `Kelas ${colMap.kelasColumns.length + 1}`);
+          }
+        }
+
+        // Fallback if no KELAS label matched
+        if (colMap.kelasColumns.length === 0 && startColScan < endColScan) {
+          for (let c = startColScan; c < endColScan; c++) {
+            if (c === pekerjaanIdx || c === aktivitasIdx || c === obyekIdx) continue;
+            const rawCell = aoa[r][c] != null ? String(aoa[r][c]).trim() : '';
+            if (!/^\d+$/.test(rawCell)) {
+              colMap.kelasColumns.push(c);
+              colMap.kelasLabels.push(rawCell || `Kelas ${colMap.kelasColumns.length + 1}`);
+            }
+          }
+        }
+
+        // Count evidence foto slots
+        colMap.fotoSlots = 0;
+        if (evidentStartCol !== -1) {
+          for (let c = evidentStartCol; c < row.length; c++) {
+            const valThisRow = String(aoa[r][c] || '').trim();
+            const valNextRow = r + 1 < aoa.length ? String(aoa[r + 1][c] || '').trim() : '';
+            if (valThisRow || valNextRow) {
+              colMap.fotoSlots++;
+            }
+          }
         }
 
         break;
@@ -180,68 +251,79 @@ const ImportModule = (() => {
 
     // Determine data start row (skip sub-header rows)
     let dataStartRow = headerRowIdx + 1;
-    // If next row looks like sub-headers (contains numbers 1,2,3...), skip it
-    if (dataStartRow < aoa.length) {
+    // Skip rows that look like sub-headers (contain header keywords as cell values)
+    const headerKeywords = ['PEKERJAAN', 'AKTIVITAS', 'OBYEK', 'KELAS', 'EVIDENT', 'NO'];
+    while (dataStartRow < aoa.length) {
       const nextRow = aoa[dataStartRow];
-      const firstFewVals = nextRow.slice(0, 5).map(v => String(v).trim());
-      const hasNumbers = firstFewVals.some(v => /^\d+$/.test(v));
-      const hasNoText = firstFewVals.filter(v => v.length > 3).length === 0;
-      if (hasNumbers && hasNoText) {
+      if (!nextRow) break;
+      const cellTexts = nextRow.slice(0, Math.min(nextRow.length, 10)).map(v => String(v || '').trim().toUpperCase());
+      // Check if this row looks like a sub-header: contains 2+ header keywords
+      const keywordHits = cellTexts.filter(t => t.length > 0 && headerKeywords.some(kw => t.includes(kw))).length;
+      // Also check: row of only small numbers (like "1 2 3 4 5")
+      const firstFewVals = nextRow.slice(0, 5).map(v => String(v || '').trim());
+      const allSmallNumbers = firstFewVals.filter(v => v.length > 0).every(v => /^\d{1,2}$/.test(v));
+      if (keywordHits >= 2 || allSmallNumbers) {
         dataStartRow++;
+      } else {
+        break;
       }
     }
 
     // Parse data rows
     const rows = [];
     let lastPekerjaan = '';
+    let lastAktivitas = '';
     let lastObyek = '';
+    let consecutiveEmpty = 0;
 
     for (let r = dataStartRow; r < aoa.length; r++) {
       const row = aoa[r];
-      if (!row || row.length === 0) continue;
-      
-      // Skip empty rows
-      const aktivitas = String(row[colMap.aktivitas] != null ? row[colMap.aktivitas] : '').trim();
-      if (!aktivitas) {
-        // Check if there's any meaningful content in this row
-        const hasContent = row.some((cell, idx) => {
-          if (idx === colMap.pekerjaan || idx === colMap.obyek) return false;
-          return String(cell != null ? cell : '').trim().length > 0;
-        });
-        if (!hasContent) continue;
-        if (!aktivitas) continue; // Skip rows without aktivitas
+      if (!row || row.length === 0) {
+        consecutiveEmpty++;
+        if (consecutiveEmpty > 20) break;
+        continue;
       }
 
-      // Handle merged PEKERJAAN — Excel merged cells may be undefined/null/empty
-      const rawPekerjaan = colMap.pekerjaan < row.length ? row[colMap.pekerjaan] : undefined;
-      let pekerjaan = String(rawPekerjaan != null ? rawPekerjaan : '').replace(/\s+/g, ' ').trim();
-      if (pekerjaan) {
-        lastPekerjaan = pekerjaan;
-      } else {
-        pekerjaan = lastPekerjaan;
+      // Extract raw cell values before carry-over
+      const rawPekerjaanVal = colMap.pekerjaan < row.length && row[colMap.pekerjaan] != null ? String(row[colMap.pekerjaan]).replace(/\s+/g, ' ').trim() : '';
+      const rawAktivitasVal = colMap.aktivitas < row.length && row[colMap.aktivitas] != null ? String(row[colMap.aktivitas]).replace(/\s+/g, ' ').trim() : '';
+      const rawObyekVal = colMap.obyek !== -1 && colMap.obyek < row.length && row[colMap.obyek] != null ? String(row[colMap.obyek]).replace(/\s+/g, ' ').trim() : '';
+      const kelasValues = colMap.kelasColumns.map(c => String(row[c] != null ? row[c] : '').trim());
+
+      const hasRawPek = rawPekerjaanVal.length > 0;
+      const hasRawAkt = rawAktivitasVal.length > 0;
+      const hasRawObyek = rawObyekVal.length > 0;
+      const hasKelas = kelasValues.some(v => v.length > 0);
+
+      // Validate raw content: a valid row MUST have at least raw pekerjaan, raw aktivitas, raw obyek, or a kelas value!
+      if (!hasRawPek && !hasRawAkt && !hasRawObyek && !hasKelas) {
+        consecutiveEmpty++;
+        if (consecutiveEmpty > 20) break; // Early stop if 20 consecutive empty rows are encountered
+        continue;
+      }
+      consecutiveEmpty = 0; // Reset counter when a valid row is found
+
+      // Determine current resolved values
+      let currentPekerjaan = rawPekerjaanVal ? rawPekerjaanVal : lastPekerjaan;
+      let currentAktivitas = rawAktivitasVal ? rawAktivitasVal : lastAktivitas;
+      let currentObyek = rawObyekVal ? rawObyekVal : lastObyek;
+
+      // Filter out duplicate sub-rows inside a merged range (e.g. photos/spacing rows in Excel) that have NO KELAS values
+      const isMergedLayoutSubrow = !hasKelas && (currentAktivitas === lastAktivitas) && (currentObyek === lastObyek);
+      if (isMergedLayoutSubrow) {
+        continue;
       }
 
-      // Handle merged OBYEK
-      let obyek = '';
-      if (colMap.obyek !== -1) {
-        obyek = String(row[colMap.obyek] || '').trim();
-        if (obyek) {
-          lastObyek = obyek;
-        } else {
-          obyek = lastObyek;
-        }
-      }
-
-      // Collect KELAS values
-      const kelasValues = colMap.kelasColumns.map(c =>
-        String(row[c] || '').trim()
-      );
+      // Update last seen hierarchy
+      if (rawPekerjaanVal) lastPekerjaan = rawPekerjaanVal;
+      if (rawAktivitasVal) lastAktivitas = rawAktivitasVal;
+      if (rawObyekVal) lastObyek = rawObyekVal;
 
       rows.push({
         rowId: 'r' + rows.length,
-        pekerjaan,
-        aktivitas,
-        obyekPekerjaan: obyek,
+        pekerjaan: currentPekerjaan,
+        aktivitas: currentAktivitas,
+        obyekPekerjaan: currentObyek,
         kelasValues
       });
     }

@@ -153,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   ImportModule.init();
   TemplatesModule.init();
   EditorModule.init();
+  if (typeof ExportModule !== 'undefined' && ExportModule.init) ExportModule.init();
   if (typeof SettingsModule !== 'undefined') SettingsModule.init();
 
   // Mobile menu

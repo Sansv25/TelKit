@@ -217,51 +217,91 @@ const EditorModule = (() => {
     headHtml += '</tr>';
     thead.innerHTML = headHtml;
 
-    // Build body with merged PEKERJAAN cells
+    // Build body with merged PEKERJAAN, AKTIVITAS, and OBYEK PEKERJAAN cells
     let bodyHtml = '';
     const rows = tpl.rows;
 
-    // Helper: normalize pekerjaan value for comparison
-    const normPekerjaan = (val) => (val || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const norm = (val) => (val || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-    // Group by pekerjaan for merge display
     let i = 0;
     while (i < rows.length) {
       const currentPekerjaan = rows[i].pekerjaan;
-      const currentNorm = normPekerjaan(currentPekerjaan);
-      let span = 1;
-      while (i + span < rows.length && normPekerjaan(rows[i + span].pekerjaan) === currentNorm) {
-        span++;
+      const normPek = norm(currentPekerjaan);
+      
+      let pekSpan = 1;
+      while (i + pekSpan < rows.length && norm(rows[i + pekSpan].pekerjaan) === normPek) {
+        pekSpan++;
       }
 
-      for (let j = 0; j < span; j++) {
-        const row = rows[i + j];
-        const globalIdx = i + j;
-        // Add group boundary class for visual grouping
-        const isGroupStart = j === 0 ? ' group-start' : '';
-        const isGroupEnd = j === span - 1 ? ' group-end' : '';
-        bodyHtml += `<tr id="row-${row.rowId}" class="group-row${isGroupStart}${isGroupEnd}">`;
-        bodyHtml += `<td class="col-no">${globalIdx + 1}</td>`;
+      let pekOffset = 0;
+      while (pekOffset < pekSpan) {
+        const aktRowIdx = i + pekOffset;
+        const currentAktivitas = rows[aktRowIdx].aktivitas;
+        const normAkt = norm(currentAktivitas);
 
-        // Merged pekerjaan cell (only on first row of group)
-        if (j === 0) {
-          bodyHtml += `<td class="col-pekerjaan merged-cell" rowspan="${span}">${_escapeHtml(currentPekerjaan)}</td>`;
+        let aktSpan = 1;
+        while (
+          pekOffset + aktSpan < pekSpan &&
+          norm(rows[i + pekOffset + aktSpan].aktivitas) === normAkt
+        ) {
+          aktSpan++;
         }
 
-        bodyHtml += `<td class="col-aktivitas">${_escapeHtml(row.aktivitas)}</td>`;
-        bodyHtml += `<td class="col-obyek">${_escapeHtml(row.obyekPekerjaan)}</td>`;
+        let aktOffset = 0;
+        while (aktOffset < aktSpan) {
+          const obyekRowIdx = aktRowIdx + aktOffset;
+          const currentObyek = rows[obyekRowIdx].obyekPekerjaan;
+          const normObyek = norm(currentObyek);
 
-        row.kelasValues.forEach(v => {
-          bodyHtml += `<td class="col-kelas">${_escapeHtml(v)}</td>`;
-        });
+          let obyekSpan = 1;
+          while (
+            aktOffset + obyekSpan < aktSpan &&
+            norm(rows[aktRowIdx + aktOffset + obyekSpan].obyekPekerjaan) === normObyek
+          ) {
+            obyekSpan++;
+          }
 
-        // Foto cell
-        bodyHtml += `<td class="col-foto">${_renderFotoCell(tpl.templateId, row.rowId)}</td>`;
+          for (let k = 0; k < obyekSpan; k++) {
+            const globalIdx = obyekRowIdx + k;
+            const row = rows[globalIdx];
 
-        bodyHtml += '</tr>';
+            const isGroupStart = (pekOffset === 0 && aktOffset === 0 && k === 0) ? ' group-start' : '';
+            const isGroupEnd = (pekOffset + aktSpan === pekSpan && aktOffset + obyekSpan === aktSpan && k === obyekSpan - 1) ? ' group-end' : '';
+
+            bodyHtml += `<tr id="row-${row.rowId}" class="group-row${isGroupStart}${isGroupEnd}">`;
+            bodyHtml += `<td class="col-no">${globalIdx + 1}</td>`;
+
+            // Merged PEKERJAAN cell
+            if (pekOffset === 0 && aktOffset === 0 && k === 0) {
+              bodyHtml += `<td class="col-pekerjaan merged-cell" rowspan="${pekSpan}">${_escapeHtml(currentPekerjaan)}</td>`;
+            }
+
+            // Merged AKTIVITAS cell
+            if (aktOffset === 0 && k === 0) {
+              bodyHtml += `<td class="col-aktivitas ${aktSpan > 1 ? 'merged-cell' : ''}" ${aktSpan > 1 ? `rowspan="${aktSpan}"` : ''}>${_escapeHtml(currentAktivitas)}</td>`;
+            }
+
+            // Merged OBYEK cell
+            if (k === 0) {
+              bodyHtml += `<td class="col-obyek ${obyekSpan > 1 ? 'merged-cell' : ''}" ${obyekSpan > 1 ? `rowspan="${obyekSpan}"` : ''}>${_escapeHtml(currentObyek)}</td>`;
+            }
+
+            row.kelasValues.forEach(v => {
+              bodyHtml += `<td class="col-kelas">${_escapeHtml(v)}</td>`;
+            });
+
+            // Foto cell
+            bodyHtml += `<td class="col-foto">${_renderFotoCell(tpl.templateId, row.rowId)}</td>`;
+            bodyHtml += '</tr>';
+          }
+
+          aktOffset += obyekSpan;
+        }
+
+        pekOffset += aktSpan;
       }
 
-      i += span;
+      i += pekSpan;
     }
 
     tbody.innerHTML = bodyHtml;
@@ -276,6 +316,9 @@ const EditorModule = (() => {
    */
   function _renderFotoCell(templateId, rowId) {
     const photos = currentPhotos;
+    const tpl = currentTemplate;
+    const row = tpl ? tpl.rows.find(r => r.rowId === rowId) : null;
+    const obyekOrAkt = row ? (row.obyekPekerjaan || row.aktivitas || 'Foto') : 'Foto';
     
     // Collect existing photos for this row
     const rowPhotos = [];
@@ -305,12 +348,31 @@ const EditorModule = (() => {
 
     // Upload zone (show if < 20 photos)
     if (rowPhotos.length < 20) {
-      html += `
-        <div class="drop-zone-mini upload-zone" data-template-id="${templateId}" data-row-id="${rowId}">
-          <input type="file" accept="image/*" multiple>
-          <span><span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-2px">add_a_photo</span> +Foto (${rowPhotos.length}/20)</span>
-        </div>
-      `;
+      const isFilled = rowPhotos.length > 0;
+      
+      if (isFilled) {
+        // Compact secondary button when row already has photos
+        html += `
+          <div class="drop-zone-mini upload-zone upload-zone-filled" data-template-id="${templateId}" data-row-id="${rowId}">
+            <input type="file" accept="image/*" multiple>
+            <span class="upload-btn-label"><span class="material-symbols-outlined" style="font-size:0.95rem;vertical-align:-2px">add_a_photo</span> Tambah Foto ${_escapeHtml(obyekOrAkt)} (${rowPhotos.length}/20)</span>
+          </div>
+        `;
+      } else {
+        // Prominent call-to-action button when row is empty
+        html += `
+          <div class="drop-zone-mini upload-zone upload-zone-empty" data-template-id="${templateId}" data-row-id="${rowId}">
+            <input type="file" accept="image/*" multiple>
+            <div class="upload-empty-content">
+              <div class="upload-action-btn">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;vertical-align:-3px">add_a_photo</span>
+                <span>+ Upload Foto ${_escapeHtml(obyekOrAkt)}</span>
+              </div>
+              <div class="upload-hint-text">Klik tombol atau tarik foto ke sini (0/20)</div>
+            </div>
+          </div>
+        `;
+      }
     }
 
     html += '</div>';
@@ -745,52 +807,8 @@ const EditorModule = (() => {
     const td = cell.parentElement;
     td.innerHTML = _renderFotoCell(templateId, rowId);
 
-    // Re-attach listeners for this cell only
-    const zone = td.querySelector('.upload-zone');
-    if (zone) {
-      const input = zone.querySelector('input[type="file"]');
-
-      zone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        zone.classList.add('dragover');
-      });
-
-      zone.addEventListener('dragleave', () => {
-        zone.classList.remove('dragover');
-      });
-
-      zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
-          _handlePhotoUpload(templateId, rowId, e.dataTransfer.files);
-        }
-      });
-
-      input.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-          _handlePhotoUpload(templateId, rowId, e.target.files);
-          e.target.value = '';
-        }
-      });
-    }
-
-    // Lightbox
-    td.querySelectorAll('.thumbnail-item img').forEach(img => {
-      img.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openLightbox(img.src);
-      });
-    });
-
-    // Delete buttons
-    td.querySelectorAll('.thumbnail-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const data = btn.dataset;
-        _deletePhoto(data.templateId, data.rowId, parseInt(data.slot));
-      });
-    });
+    // Re-attach ALL listeners (upload, drag/drop, touch, delete, lightbox) for this cell
+    _attachUploadListeners(td);
   }
 
 

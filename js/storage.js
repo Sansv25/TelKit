@@ -11,11 +11,80 @@ const Storage = (() => {
 
   let dbPromise = null;
 
+  // Default templates seeded automatically from EvidenceFoto_Backup_2026-08-19.json
+  // Ordered explicitly: Kelas 3, Kelas 4, Kelas 5
+  const DEFAULT_TEMPLATES = [
+    {
+      templateId: 'default_kelas_3',
+      sheetName: 'Kelas 3',
+      fileName: 'Eviden ruang IOC DAN TL TA.xlsx',
+      kelasColumns: ['KELAS 3'],
+      maxFotoSlots: 20,
+      createdAt: '2026-08-19T10:00:00.000Z',
+      isDefault: true,
+      rows: [
+        { rowId: 'r0', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dinding', obyekPekerjaan: 'Dinding', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r1', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dan perawatan lantai', obyekPekerjaan: 'Lantai', kelasValues: ['2 x seminggu'] },
+        { rowId: 'r2', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dan perawatan lantai', obyekPekerjaan: 'Lantai', kelasValues: ['1 x setiap triwulan'] },
+        { rowId: 'r3', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dan perawatan lantai', obyekPekerjaan: 'Lantai keramik/granit/marmer', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r4', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan plafon', obyekPekerjaan: 'Plafon', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r5', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Saluran air', kelasValues: ['2 x sebulan'] },
+        { rowId: 'r6', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['1 x sehari'] },
+        { rowId: 'r7', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['2 x seminggu'] },
+        { rowId: 'r8', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Gordyn dan vertical blind', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r9', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan meubelair', obyekPekerjaan: 'Kursi, meja, dan lemari, TV, telephone, kulkas', kelasValues: ['1 x sehari'] },
+        { rowId: 'r10', pekerjaan: 'Housekeeping', aktivitas: 'Pekerjaan pest and rodent control', obyekPekerjaan: 'Lingkungan di dalam dan luar gedung', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r11', pekerjaan: 'Housekeeping', aktivitas: 'Pekerjaan hygiene service', obyekPekerjaan: 'Pengharum ruangan', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r12', pekerjaan: 'Housekeeping', aktivitas: 'Pekerjaan hygiene service', obyekPekerjaan: 'Hygiene unit', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r13', pekerjaan: 'Housekeeping', aktivitas: 'Toiletries', obyekPekerjaan: 'Sabun Cuci Tangan', kelasValues: [''] },
+        { rowId: 'r14', pekerjaan: 'Housekeeping', aktivitas: 'Toiletries', obyekPekerjaan: 'Keset masuk toilet dan keset closet', kelasValues: [''] },
+        { rowId: 'r15', pekerjaan: 'Housekeeping', aktivitas: 'Toiletries', obyekPekerjaan: 'Tissue roll', kelasValues: ['3 x sehari'] },
+        { rowId: 'r16', pekerjaan: 'Housekeeping', aktivitas: 'Kebersihan toilet', obyekPekerjaan: 'Dinding, kaca, wastafel, closet, pintu, urinoir', kelasValues: ['3 x sehari'] }
+      ]
+    },
+    {
+      templateId: 'default_kelas_4',
+      sheetName: 'Kelas 4',
+      fileName: 'Eviden ruang IOC DAN TL TA.xlsx',
+      kelasColumns: ['KELAS 4'],
+      maxFotoSlots: 20,
+      createdAt: '2026-08-19T10:01:00.000Z',
+      isDefault: true,
+      rows: [
+        { rowId: 'r0', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dinding', obyekPekerjaan: 'Dinding', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r1', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dan perawatan lantai', obyekPekerjaan: 'Lantai', kelasValues: ['1 x seminggu'] },
+        { rowId: 'r2', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan plafon', obyekPekerjaan: 'Plafon', kelasValues: ['1 x 2 bulan'] },
+        { rowId: 'r3', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Saluran air', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r4', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['1 x sehari'] },
+        { rowId: 'r5', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['1 x seminggu'] },
+        { rowId: 'r6', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan meubelair', obyekPekerjaan: 'Kursi, meja, dan lemari, TV, telephone, kulkas', kelasValues: ['1 x sehari'] },
+        { rowId: 'r7', pekerjaan: 'Housekeeping', aktivitas: 'Pekerjaan pest and rodent control', obyekPekerjaan: 'Lingkungan di dalam dan luar gedung', kelasValues: ['1 x 2 bulan'] }
+      ]
+    },
+    {
+      templateId: 'default_kelas_5',
+      sheetName: 'Kelas 5',
+      fileName: 'Eviden ruang IOC DAN TL TA.xlsx',
+      kelasColumns: ['KELAS 5'],
+      maxFotoSlots: 20,
+      createdAt: '2026-08-19T10:02:00.000Z',
+      isDefault: true,
+      rows: [
+        { rowId: 'r0', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dinding', obyekPekerjaan: 'Dinding', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r1', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan dan perawatan lantai', obyekPekerjaan: 'Lantai', kelasValues: ['1 x seminggu'] },
+        { rowId: 'r2', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan plafon', obyekPekerjaan: 'Plafon', kelasValues: ['1 x 3 bulan'] },
+        { rowId: 'r3', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Saluran air', kelasValues: ['1 x sebulan'] },
+        { rowId: 'r4', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['1 x seminggu'] },
+        { rowId: 'r5', pekerjaan: 'Housekeeping', aktivitas: 'Pembersihan indoor bangunan', obyekPekerjaan: 'Sampah', kelasValues: ['1 x seminggu'] }
+      ]
+    }
+  ];
+
   /**
-   * Initialize the IndexedDB connection
+   * Initialize the IndexedDB connection and seed defaults if empty
    * @returns {Promise<IDBDatabase>}
    */
-  function initDB() {
+  async function initDB() {
     if (dbPromise) return dbPromise;
 
     dbPromise = new Promise((resolve, reject) => {
@@ -47,7 +116,33 @@ const Storage = (() => {
       };
     });
 
-    return dbPromise;
+    const db = await dbPromise;
+    await seedDefaultTemplatesIfEmpty(db);
+    return db;
+  }
+
+  /**
+   * Seed default templates if database has no templates
+   * @private
+   */
+  async function seedDefaultTemplatesIfEmpty(db) {
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_TEMPLATES, 'readwrite');
+        const store = tx.objectStore(STORE_TEMPLATES);
+        const countReq = store.count();
+
+        countReq.onsuccess = () => {
+          if (countReq.result === 0) {
+            DEFAULT_TEMPLATES.forEach(tpl => store.put(tpl));
+          }
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch (err) {
+        resolve();
+      }
+    });
   }
 
   // ===== TEMPLATES =====
@@ -70,18 +165,35 @@ const Storage = (() => {
   }
 
   /**
-   * Get all templates
+   * Get all templates (sorted: Kelas 3, Kelas 4, Kelas 5 first, then custom)
    * @returns {Promise<Array>}
    */
   async function getTemplates() {
     const db = await initDB();
-    return new Promise((resolve, reject) => {
+    const rawTemplates = await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_TEMPLATES, 'readonly');
       const store = tx.objectStore(STORE_TEMPLATES);
       const request = store.getAll();
 
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
+    });
+
+    if (rawTemplates.length === 0) {
+      await seedDefaultTemplatesIfEmpty(db);
+      return [...DEFAULT_TEMPLATES];
+    }
+
+    // Explicit order: Kelas 3 -> 1, Kelas 4 -> 2, Kelas 5 -> 3, then others
+    const orderMap = { 'Kelas 3': 1, 'Kelas 4': 2, 'Kelas 5': 3 };
+    return rawTemplates.sort((a, b) => {
+      const orderA = orderMap[a.sheetName] || (a.isDefault ? 10 : 99);
+      const orderB = orderMap[b.sheetName] || (b.isDefault ? 10 : 99);
+      if (orderA !== orderB) return orderA - orderB;
+
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeA - timeB;
     });
   }
 
@@ -303,7 +415,7 @@ const Storage = (() => {
   }
 
   /**
-   * Clear all templates and photos
+   * Clear all templates and photos, and automatically restore default templates
    */
   async function clearAll() {
     const db = await initDB();
@@ -312,6 +424,9 @@ const Storage = (() => {
       
       tx.objectStore(STORE_TEMPLATES).clear();
       tx.objectStore(STORE_PHOTOS).clear();
+
+      // Automatically re-seed default templates
+      DEFAULT_TEMPLATES.forEach(tpl => tx.objectStore(STORE_TEMPLATES).put(tpl));
 
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -336,3 +451,4 @@ const Storage = (() => {
     importAllData
   };
 })();
+
