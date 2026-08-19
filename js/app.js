@@ -59,7 +59,7 @@ const Router = (() => {
    * Handle hash route change
    */
   async function handleRoute() {
-    const hash = window.location.hash.slice(1) || 'import';
+    const hash = window.location.hash.slice(1) || 'templates';
     const [pageName, queryString] = hash.split('?');
     const params = new URLSearchParams(queryString || '');
 
@@ -77,7 +77,7 @@ const Router = (() => {
     if (page) {
       page.style.display = 'block';
     } else {
-      window.location.hash = '#import';
+      window.location.hash = '#templates';
       return;
     }
 
