@@ -1,5 +1,5 @@
-/* Service Worker for Evidence Foto Housekeeping PWA */
-const CACHE_NAME = 'evidence-foto-v1';
+/* Service Worker for TELKIT PWA */
+const CACHE_NAME = 'telkit-v1';
 const ASSETS = [
   './',
   './index.html',

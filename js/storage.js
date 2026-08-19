@@ -4,7 +4,7 @@
    ============================================================ */
 
 const Storage = (() => {
-  const DB_NAME = 'EvidenceFotoDB';
+  const DB_NAME = 'TELKITDB';
   const DB_VERSION = 1;
   const STORE_TEMPLATES = 'templates';
   const STORE_PHOTOS = 'photos';

@@ -1,7 +1,7 @@
 {
-  "name": "Evidence Foto Housekeeping",
-  "short_name": "Evidence Foto",
-  "description": "Aplikasi Web Evidence Foto Checklist Housekeeping & Export PDF",
+  "name": "TELKIT",
+  "short_name": "TELKIT",
+  "description": "Aplikasi Web TELKIT Checklist Housekeeping & Export PDF",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
