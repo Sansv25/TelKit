@@ -145,12 +145,37 @@ const EditorModule = (() => {
       }
     });
 
+    // Lightbox zoom state
+    document.getElementById('lightboxZoomOutBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _setLightboxZoom(currentLightboxZoom - 0.25);
+    });
+
+    document.getElementById('lightboxZoomInBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _setLightboxZoom(currentLightboxZoom + 0.25);
+    });
+
+    document.getElementById('lightboxZoomResetBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _setLightboxZoom(1.0);
+    });
+
     // Lightbox
-    document.getElementById('lightbox').addEventListener('click', (e) => {
-      if (e.target === e.currentTarget || e.target.id === 'lightboxClose') {
+    const lightboxOverlay = document.getElementById('lightbox');
+    lightboxOverlay?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget || e.target.id === 'lightboxClose' || e.target.id === 'lightboxWrapper') {
         closeLightbox();
       }
     });
+
+    lightboxOverlay?.addEventListener('wheel', (e) => {
+      if (lightboxOverlay.classList.contains('open')) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        _setLightboxZoom(currentLightboxZoom + delta);
+      }
+    }, { passive: false });
 
     // Keyboard: close lightbox with Escape
     document.addEventListener('keydown', (e) => {
@@ -813,6 +838,24 @@ const EditorModule = (() => {
 
 
 
+  let currentLightboxZoom = 1.0;
+
+  function _setLightboxZoom(zoom) {
+    currentLightboxZoom = Math.min(Math.max(zoom, 0.5), 4.0);
+    _applyLightboxZoom();
+  }
+
+  function _applyLightboxZoom() {
+    const img = document.getElementById('lightboxImg');
+    const valEl = document.getElementById('lightboxZoomVal');
+    if (valEl) {
+      valEl.textContent = `${Math.round(currentLightboxZoom * 100)}%`;
+    }
+    if (img) {
+      img.style.setProperty('--lightbox-zoom', currentLightboxZoom);
+    }
+  }
+
   /**
    * Open lightbox with full-size image
    */
@@ -820,6 +863,8 @@ const EditorModule = (() => {
     const overlay = document.getElementById('lightbox');
     const img = document.getElementById('lightboxImg');
     img.src = src;
+    currentLightboxZoom = 1.0;
+    _applyLightboxZoom();
     overlay.classList.add('open');
   }
 

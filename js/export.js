@@ -11,6 +11,7 @@ const ExportModule = (() => {
   let activePhotoSize = 'medium'; // 'small' (70px) | 'medium' (85px) | 'large' (110px)
   let currentPdfDoc = null;
   let currentPdfFilename = '';
+  let currentPdfZoom = 1.0; // Zoom level: 0.5 (50%) to 2.5 (250%)
 
   /**
    * Initialize PDF preview modal listeners - called on app start
@@ -54,6 +55,31 @@ const ExportModule = (() => {
     document.getElementById('pdfSizeMedBtn')?.addEventListener('click', () => setPhotoSize('medium'));
     document.getElementById('pdfSizeLargeBtn')?.addEventListener('click', () => setPhotoSize('large'));
 
+    // Zoom control buttons (Pojok Kanan Bawah)
+    document.getElementById('pdfZoomOutBtn')?.addEventListener('click', () => {
+      _setPdfZoom(currentPdfZoom - 0.15);
+    });
+
+    document.getElementById('pdfZoomInBtn')?.addEventListener('click', () => {
+      _setPdfZoom(currentPdfZoom + 0.15);
+    });
+
+    document.getElementById('pdfZoomResetBtn')?.addEventListener('click', () => {
+      _setPdfZoom(1.0);
+    });
+
+    // Mouse wheel zoom support (Ctrl + wheel or scroll inside modal body)
+    const modalBody = document.getElementById('pdfModalBody');
+    if (modalBody) {
+      modalBody.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.1 : -0.1;
+          _setPdfZoom(currentPdfZoom + delta);
+        }
+      }, { passive: false });
+    }
+
     // Download PDF button
     document.getElementById('pdfPreviewDownloadBtn')?.addEventListener('click', () => {
       if (!currentPdfDoc || !currentPdfFilename) {
@@ -64,6 +90,30 @@ const ExportModule = (() => {
       closeModal();
       Toast.show('✅ Dokumen PDF berhasil diunduh!', 'success');
     });
+  }
+
+  /**
+   * Set PDF Preview Zoom Level
+   * @private
+   */
+  function _setPdfZoom(zoom) {
+    currentPdfZoom = Math.min(Math.max(zoom, 0.5), 2.5);
+    _applyPdfZoom();
+  }
+
+  /**
+   * Apply zoom level to preview container DOM
+   * @private
+   */
+  function _applyPdfZoom() {
+    const container = document.getElementById('pdfPreviewContainer');
+    const valEl = document.getElementById('pdfZoomVal');
+    if (valEl) {
+      valEl.textContent = `${Math.round(currentPdfZoom * 100)}%`;
+    }
+    if (container) {
+      container.style.setProperty('--pdf-zoom', currentPdfZoom);
+    }
   }
 
   /**
@@ -98,9 +148,11 @@ const ExportModule = (() => {
       // Default orientation: Landscape for multi-column templates, Portrait for single-column few-row templates
       activeIsPortrait = template.kelasColumns.length <= 1 && template.rows.length <= 4;
       activePhotoSize = 'medium'; // default Medium (85px)
+      currentPdfZoom = 1.0; // Reset zoom to 100%
 
       _updateOrientationToggleButtons();
       _updatePhotoSizeToggleButtons();
+      _applyPdfZoom();
       await _generateAndRenderPreview();
 
       // Open PDF Preview Modal

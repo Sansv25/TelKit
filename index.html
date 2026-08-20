@@ -425,9 +425,22 @@
       </div>
 
       <!-- Scrollable Preview Area (Single Scrollbar) -->
-      <div class="modal-body" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px;">
+      <div class="modal-body" id="pdfModalBody" style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px; position: relative;">
         <div id="pdfPreviewContainer" style="display:flex; flex-direction:column; gap:16px; align-items:center; background: var(--bg-base); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
           <!-- Rendered page canvases/images inserted here dynamically -->
+        </div>
+
+        <!-- Floating Zoom Controls (Bottom Right of Preview Area) -->
+        <div class="zoom-controls-widget" id="pdfZoomControls">
+          <button class="zoom-btn" id="pdfZoomOutBtn" title="Perkecil (Zoom Out)" aria-label="Zoom Out">
+            <span class="material-symbols-outlined">remove</span>
+          </button>
+          <button class="zoom-reset-btn" id="pdfZoomResetBtn" title="Reset Zoom (100%)">
+            <span id="pdfZoomVal">100%</span>
+          </button>
+          <button class="zoom-btn" id="pdfZoomInBtn" title="Perbesar (Zoom In)" aria-label="Zoom In">
+            <span class="material-symbols-outlined">add</span>
+          </button>
         </div>
       </div>
 
@@ -445,7 +458,22 @@
     <button class="lightbox-close" id="lightboxClose">
       <span class="material-symbols-outlined">close</span>
     </button>
-    <img src="" alt="Preview foto" id="lightboxImg">
+    <div class="lightbox-img-wrapper" id="lightboxWrapper">
+      <img src="" alt="Preview foto" id="lightboxImg">
+    </div>
+
+    <!-- Floating Zoom Controls (Fixed at Screen Bottom Right) -->
+    <div class="zoom-controls-widget" id="lightboxZoomControls">
+      <button class="zoom-btn" id="lightboxZoomOutBtn" title="Perkecil (Zoom Out)" aria-label="Zoom Out">
+        <span class="material-symbols-outlined">remove</span>
+      </button>
+      <button class="zoom-reset-btn" id="lightboxZoomResetBtn" title="Reset Zoom (100%)">
+        <span id="lightboxZoomVal">100%</span>
+      </button>
+      <button class="zoom-btn" id="lightboxZoomInBtn" title="Perbesar (Zoom In)" aria-label="Zoom In">
+        <span class="material-symbols-outlined">add</span>
+      </button>
+    </div>
   </div>
 
   <!-- ===== Progress Overlay (PDF) ===== -->
